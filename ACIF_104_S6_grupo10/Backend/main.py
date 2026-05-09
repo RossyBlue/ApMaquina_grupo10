@@ -5,13 +5,15 @@ import os
 import numpy as np
 from pydantic import BaseModel
 from typing import List
-
+import time
 app = FastAPI()
 
 # Cargar Modelo y CSV
 base_path = os.path.dirname(__file__)
-model = joblib.load(os.path.join(base_path, 'modelo_final_netflix.pkl'))
+model_path = os.path.join(base_path, '..', 'models', 'modelo_final_netflix-2.pkl')
+model = joblib.load(model_path)
 df = pd.read_csv(os.path.join(base_path, 'netflix_cleaned.csv'), sep=';')
+
 
 class FilterQuery(BaseModel):
     generos: List[str]
@@ -19,7 +21,7 @@ class FilterQuery(BaseModel):
     anio_max: int
     rating_min: float
 
-@app.post("/recommend")
+@app.post("/recommend", summary="Genera recomendaciones de Netflix", description="Retorna el top 10 de películas basadas en un modelo de XGBoost balanceado.")
 def recommend(data: FilterQuery):
     try:
         # 1. FILTRAR EL CSV (Nombres y datos base)
@@ -56,3 +58,8 @@ def recommend(data: FilterQuery):
 
     except Exception as e:
         return {"error": str(e)}
+    
+start_time = time.time()
+# ... (proceso del modelo)
+
+print(f"Tiempo de inferencia: {time.time() - start_time} segundos")
