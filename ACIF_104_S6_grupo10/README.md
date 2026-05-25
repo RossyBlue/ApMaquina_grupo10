@@ -175,19 +175,23 @@ Acif104/
 │
 ├── Backend/
 │   ├── main.py
-│   ├── model/
-│   │   └── xgboost_model.pkl
-│   └── utils/
 │
 ├── Frontend/
 │   └── app.py
 │
 ├── notebooks/
-│   └── entrenamiento_modelos.ipynb
+│   └── Semana_9_Sumativa_2_fase3.ipynb
 │
 ├── data/
-│   └── netflix_dataset.csv
+│   └── netflix_movies_detailed_up_to_2025.csv
+    └── netflix_tv_shows_detailed_up_to_2025.csv
 │
+├── docs/
+│   └── acif104_s9_BCastillo_SHerrera_RGarrote.pdf
+    
+ ── models/
+│     └── modelo_final_netflix-2.pkl
+
 ├── requirements.txt
 ├── README.md
 └── .gitignore
