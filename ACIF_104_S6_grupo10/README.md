@@ -57,6 +57,7 @@ El dataset contiene información relacionada con:
 - `rating`
 - `main_country`
 - `main_genre`
+- `type` (película o serie)
 
 ### Variable objetivo
 - `popularity`
@@ -121,12 +122,13 @@ XGBoost fue seleccionado porque:
 El sistema utiliza una arquitectura desacoplada compuesta por frontend y backend separados.
 
 ## 🔹 Backend
-Desarrollado con FastAPI.
+Desarrollado con FastAPI (versión 2.0.0).
 
 Responsabilidades:
 - cargar modelo entrenado,
-- procesar solicitudes,
-- ejecutar predicciones,
+- procesar solicitudes con inferencia vectorizada,
+- ejecutar predicciones con XGBoost,
+- registrar trazabilidad de consultas mediante logging,
 - retornar resultados al frontend.
 
 ## 🔹 Frontend
@@ -134,9 +136,10 @@ Desarrollado con Streamlit.
 
 Responsabilidades:
 - interfaz gráfica de usuario,
-- selección de filtros,
-- visualización de resultados,
-- interacción con la API.
+- selección de filtros interactivos,
+- visualización de resultados con score de popularidad,
+- caché de peticiones para mejor rendimiento,
+- descarga de resultados en CSV.
 
 ---
 
@@ -175,6 +178,7 @@ Acif104/
 │
 ├── Backend/
 │   ├── main.py
+│   └── netflix_cleaned.csv
 │
 ├── Frontend/
 │   └── app.py
@@ -183,15 +187,15 @@ Acif104/
 │   └── Semana_9_Sumativa_2_fase3.ipynb
 │
 ├── data/
-│   └── netflix_movies_detailed_up_to_2025.csv
-    └── netflix_tv_shows_detailed_up_to_2025.csv
+│   ├── netflix_movies_detailed_up_to_2025.csv
+│   └── netflix_tv_shows_detailed_up_to_2025.csv
 │
 ├── docs/
 │   └── acif104_s9_BCastillo_SHerrera_RGarrote.pdf
-    
- ── models/
-│     └── modelo_final_netflix-2.pkl
-
+│
+├── models/
+│   └── modelo_final_netflix-2.pkl
+│
 ├── requirements.txt
 ├── README.md
 └── .gitignore
@@ -246,13 +250,13 @@ uvicorn Backend.main:app --reload
 
 Backend disponible en:
 
-```text
+```
 http://127.0.0.1:8000
 ```
 
-Documentación Swagger:
+Documentación Swagger UI:
 
-```text
+```
 http://127.0.0.1:8000/docs
 ```
 
@@ -268,7 +272,7 @@ streamlit run Frontend/app.py
 
 Frontend disponible en:
 
-```text
+```
 http://localhost:8501
 ```
 
@@ -278,82 +282,92 @@ http://localhost:8501
 
 1. El usuario ingresa parámetros desde Streamlit.
 2. El frontend envía la solicitud al backend.
-3. FastAPI procesa la información.
-4. El modelo XGBoost genera la predicción.
-5. El backend retorna el resultado.
-6. Streamlit muestra la recomendación al usuario.
+3. FastAPI procesa la información y ejecuta inferencia vectorizada.
+4. El modelo XGBoost genera la predicción de popularidad.
+5. El backend registra la consulta mediante logging estructurado.
+6. El backend retorna el resultado ordenado por score.
+7. Streamlit muestra las recomendaciones con visualización interactiva.
 
 ---
 
-# 📌 Ejemplo de Uso
+# 📡 Endpoints de la API
 
-## Entrada del usuario
+| Método | Endpoint | Descripción |
+|---|---|---|
+| GET | `/health` | Estado del servicio, modelo y dataset |
+| GET | `/genres` | Géneros disponibles en el catálogo |
+| POST | `/recommend` | Recomendaciones personalizadas por popularidad predicha |
 
-- Género: Drama
-- Año: 2020
-- Rating mínimo: 7
-
-## Resultado esperado
-
-El sistema retorna:
-- contenidos recomendados,
-- popularidad estimada,
-- ranking de resultados.
-
----
-
-# 📡 Ejemplo de Uso API
-
-## Endpoint
-
-```text
-POST /predict
-```
-
-## Ejemplo JSON
+## Ejemplo JSON — POST /recommend
 
 ```json
 {
-  "release_year": 2020,
-  "rating": 7,
-  "main_country": "United States",
-  "main_genre": "Drama"
+  "generos": ["Drama", "Romance"],
+  "anio_min": 2015,
+  "anio_max": 2023,
+  "rating_min": 7.0,
+  "top_n": 10
 }
 ```
 
----
+## Ejemplo de respuesta
 
+```json
+[
+  {
+    "title": "Nombre del contenido",
+    "release_year": 2021,
+    "rating": 7.8,
+    "score_ia": 145.32,
+    "type": "Movie"
+  }
+]
+```
+
+---
 
 # 🔍 Interpretabilidad del Modelo
 
 Durante el desarrollo del proyecto se exploraron técnicas de interpretabilidad como SHAP (SHapley Additive Explanations) con el objetivo de analizar la influencia de las variables sobre las predicciones.
 
-Sin embargo, debido al alcance académico y restricciones de las propias bases de datos del proyecto, estas técnicas no fueron integradas en la versión final del sistema. En su lugar, se priorizó el análisis del desempeño mediante métricas de regresión y estrategias de ponderación de muestras (`sample_weight`) para mejorar la sensibilidad del modelo frente a contenidos de alta popularidad.
+El análisis SHAP evidenció que las variables con mayor contribución en la estimación de popularidad fueron:
+- género principal,
+- país de origen,
+- rating,
+- tipo de contenido,
+- año de lanzamiento.
+
+Estas variables fueron posteriormente utilizadas como base para el sistema de filtrado y recomendación implementado en el backend.
 
 ---
 
 # 📈 Características del Sistema
 
-✅ Arquitectura desacoplada  
-✅ API REST con FastAPI  
+✅ Arquitectura desacoplada frontend/backend  
+✅ API REST documentada con FastAPI + Swagger UI (OAS 3.1)  
 ✅ Interfaz interactiva con Streamlit  
-✅ Modelo de Machine Learning integrado  
-✅ Sistema reproducible  
-✅ Escalable para futuras mejoras  
-✅ Estrategias de ponderación mediante sample_weight
-
+✅ Modelo XGBoost integrado (32.000 registros)  
+✅ Inferencia vectorizada con NumPy/Pandas  
+✅ Logging estructurado con trazabilidad de consultas  
+✅ Health check y monitoreo del servicio (`/health`)  
+✅ Géneros dinámicos obtenidos desde el dataset (`/genres`)  
+✅ Caché de peticiones en el frontend  
+✅ Descarga de resultados en CSV  
+✅ Sistema reproducible y escalable  
+✅ Manejo avanzado de errores en frontend y backend  
 
 ---
 
 # 🔮 Mejoras Futuras
 
-- Incorporación de NLP sobre descripciones
-- Optimización avanzada de hiperparámetros
-- Validación cruzada
-- Despliegue en la nube
-- Integración con bases de datos
-- Recomendaciones personalizadas
-- Monitoreo del modelo
+- Incorporación de NLP sobre descripciones y sinopsis
+- Optimización avanzada de hiperparámetros (Grid Search, Bayesian Optimization)
+- Validación cruzada extendida
+- Despliegue en la nube (AWS / GCP / Railway)
+- Integración con bases de datos para persistencia de consultas
+- Autenticación de usuarios
+- Monitoreo continuo del modelo
+- Dashboards explicativos con SHAP interactivo
 
 ---
 
@@ -371,6 +385,7 @@ Sin embargo, debido al alcance académico y restricciones de las propias bases d
 - XGBoost Documentation
 - FastAPI Documentation
 - Streamlit Documentation
+- SHAP Documentation
 
 ---
 
